@@ -2,26 +2,16 @@
 
 - [Introduction](#introduction)
 - [Installation](#installation)
+- [Setup](#setup)
 - [Configuration](#configuration)
-- [Usage](#usage)
-  - [Override PayPal API Configuration](#usage-paypal-api-configuration)
-  - [Set Currency](#usage-currency)
-  - [Additional PayPal API Parameters](#usage-paypal-params)
-  - [Express Checkout](#usage-express-checkout)
-    - [SetExpressCheckout](#usage-ec-setexpresscheckout)
-    - [GetExpressCheckoutDetails](#usage-ec-getexpresscheckoutdetails)
-    - [DoExpressCheckoutPayment](#usage-ec-doexpresscheckoutpayment)
-    - [RefundTransaction](#usage-ec-refundtransaction)
-    - [CreateBillingAgreement](#usage-ec-createbillingagreement)
-    - [CreateRecurringPaymentsProfile](#usage-ec-createrecurringprofile)
-    - [GetRecurringPaymentsProfileDetails](#usage-ec-getrecurringprofiledetails)
-    - [UpdateRecurringPaymentsProfile](#usage-ec-updaterecurringprofile)
-    - [ManageRecurringPaymentsProfileStatus](#usage-ec-managerecurringprofile)
-  - [Adaptive Payments](#usage-adaptive-payments)
-    - [Pay](#usage-adaptive-pay)
+- [Express Checkout](#express-checkout)
+- [Override PayPal API Configuration](#override-api-configuration)
+- [Set Currency](#set-currency)
+- [Refund Transaction](#refund-transaction)
+- [Recurring Payments Profile](#recurring-payment-profile)
+- [Adaptive Payments](#adaptive-payments)
 - [Handling PayPal IPN](#paypalipn)
 - [Creating Subscriptions](#create-subscriptions)
-- [Support](#support)
 
 <a name="introduction"></a>
 ## Introduction
@@ -35,79 +25,160 @@ By using this plugin you can process or refund payments and handle IPN (Instant 
 
 * Use following command to install:
 
-```bash
-composer require proxylyx/paypal:~1.0
-```
+  ```bash
+  composer require proxylyx/paypal
+  ```
+<a name="setup"></a>
+## Setup
+
+**Note: Required only for Laravel 5.4 and below. Laravel 5.5 and above uses Auto Package Discovery, so no need to add service provider**
 
 * Add the service provider to your `$providers` array in `config/app.php` file like: 
 
-```php
-'Proxylyx\PayPal\Providers\PayPalServiceProvider' // Laravel 5
-```
-```php
-Proxylyx\PayPal\Providers\PayPalServiceProvider::class // Laravel 5.1 or greater
-```
+  ```php
+  // Laravel 5.1 or up
+  Proxylyx\PayPal\Providers\PayPalServiceProvider::class 
+  ```
+  ```php
+  // Laravel 5 or below
+  'Proxylyx\PayPal\Providers\PayPalServiceProvider'
+  ```
 
 * Add the alias to your `$aliases` array in `config/app.php` file like: 
 
-```php
-'PayPal' => 'Proxylyx\PayPal\Facades\PayPal' // Laravel 5
-```
-```php
-'PayPal' => Proxylyx\PayPal\Facades\PayPal::class // Laravel 5.1 or greater
-```
+  ```php
+  // Laravel 5.1 or up
+  'PayPal' => Proxylyx\PayPal\Facades\PayPal::class
+  ```
+  
+  ```php
+  // Laravel 5 or below
+  'PayPal' => 'Proxylyx\PayPal\Facades\PayPal'
+  ```
 
-* Run the following command to publish configuration:
 
-```bash
-php artisan vendor:publish --provider "Proxylyx\PayPal\Providers\PayPalServiceProvider"
-```
 
 <a name="configuration"></a>
 ## Configuration
+* Run the following command to publish configuration:
 
-* After installation, you will need to add your paypal settings. Following is the code you will find in **config/paypal.php**, which you should update accordingly.
+  ```bash
+  php artisan vendor:publish --provider "Proxylyx\PayPal\Providers\PayPalServiceProvider"
+  ```
 
-```php
-return [
-    'mode' => 'sandbox',        // Can only be 'sandbox' Or 'live'. If empty or invalid, 'live' will be used.
-    'sandbox' => [
-        'username' => '',       // Api Username
-        'password' => '',       // Api Password
-        'secret' => '',         // This refers to api signature
-        'certificate' => '',    // Link to paypals cert file, storage_path('cert_key_pem.txt')
-    ],
-    'live' => [
-        'username' => '',       // Api Username
-        'password' => '',       // Api Password
-        'secret' => '',         // This refers to api signature
-        'certificate' => '',    // Link to paypals cert file, storage_path('cert_key_pem.txt')
-    ],
-    'payment_action' => 'Sale', // Can Only Be 'Sale', 'Authorization', 'Order'
-    'currency' => 'USD',
-    'notify_url' => '',         // Change this accordingly for your application.
-];
-```
+* Set you PayPal credentials and environment in **.env** with following variables. For additional configuration you can have a look at **config/paypal.php**, which you should update accordingly.
 
-<a name="usage"></a>
-## Usage
+  ```env
+  PAYPAL_ENV=sandbox
+  PAYPAL_API_USERNAME=
+  PAYPAL_API_PASSWORD=
+  PAYPAL_API_SECRET=
+  PAYPAL_API_CERTIFICATE=
+  ```
 
-Following are some ways through which you can access the paypal provider:
+<a name="express-checkout"></a> 
+## Express Checkout
 
-```php
-// Import the class namespaces first, before using it directly
-use Proxylyx\PayPal\Services\ExpressCheckout;
-use Proxylyx\PayPal\Services\AdaptivePayments;
+* **Import Class**
+  ```php
+  use PayPal;
+  ```
+* **Create Provider**
 
-$provider = new ExpressCheckout;      // To use express checkout.
-$provider = new AdaptivePayments;     // To use adaptive payments.
+  ```php
+  protected $PayPalProvider;
 
-// Through facade. No need to import namespaces
-$provider = PayPal::setProvider('express_checkout');      // To use express checkout(used by default).
-$provider = PayPal::setProvider('adaptive_payments');     // To use adaptive payments.
-```
+  public function __construct()
+  {
+        $this->PayPalProvider = PayPal::setProvider('express_checkout');
+  }
+  ```
+* **Generate PayPal Data**
+  ```php
+  protected function paypalData()
+  {
+          $order = Order::find(session('orderId'));
+          $data = [];
+          try {
+              $orderItems = $order->items()->get();
+          } catch (\Exception $e) {
+              throw new \Exception("Order items empty", 1);
+          }
+          $data['items'] = [];
+          foreach ($orderItems as $item) {
+              array_push($data['items'], [
+                  'name' => $item->item_name,
+                  'price' => $item->price,
+                  'qty' => $item->quantity
+              ]);
+          }
+          $data['invoice_id'] = $order->id;
+          $data['invoice_description'] = "Order #{$data['invoice_id']} Invoice";
+          $data['return_url'] = route('paymentCallback');
+          $data['cancel_url'] = route('paymentCancel');
 
-<a name="usage-paypal-api-configuration"></a>
+          $total = 0;
+          foreach($data['items'] as $item) {
+              $total += $item['price']*$item['qty'];
+          }
+          $data['total'] = $total;
+
+          return $data;
+  }
+  ```
+* **Additional PayPal API Parameters**
+
+    By default only a specific set of parameters are used for PayPal API calls. However, if you wish specify any other additional parameters you may call the `addOptions` method before calling any respective API methods:
+  ```php
+  $options = [
+      'BRANDNAME' => env('APP_NAME'),
+      'LOGOIMG' => url('img/logo.png'),
+      'CHANNELTYPE' => 'Merchant'
+  ];
+  ```
+* **Redirect to PayPal**
+  ```php
+  $data = $this->paypalData();
+  $response = $this->PayPalProvider->addOptions($options)->setExpressCheckout($data);
+  return redirect($response['paypal_link']);
+  ```
+* **Callabck and Process Payment**
+  ```php
+  protected function paypalCallback()
+  { 
+      $token = isset($_GET['token']) ? $_GET['token'] : null;
+      $payerID = isset($_GET['PayerID']) ? $_GET['PayerID'] : null;
+
+      if ($token == null || $payerID == null) {
+          return collect([
+              'status' => 'invalid',
+              'message' => "Token or Payer ID not found"
+          ]);
+      }
+
+      $data = $this->paypalData();
+
+      $response = $this->PayPalProvider->doExpressCheckoutPayment($data, $token, $payerID);
+
+      $ack = strtolower($response['ACK']);
+
+      if ($ack === 'success' || $ack === 'successwithwarning') {
+          return collect([
+              'status' => 'success',
+              'transactionId' => $response['PAYMENTINFO_0_TRANSACTIONID'],
+              'message' => "Payment successfully processed."
+          ]);
+      } else {
+          return collect([
+              'status' => 'failed',
+              'message' => $response['L_SHORTMESSAGE0']
+          ]);
+      }
+
+  }
+  ```
+
+<a name="override-api-configuration"></a>
 ## Override PayPal API Configuration
 
 You can override PayPal API configuration by calling `setApiCredentials` method:
@@ -116,7 +187,7 @@ You can override PayPal API configuration by calling `setApiCredentials` method:
 $provider->setApiCredentials($config);
 ```
 
-<a name="usage-currency"></a>
+<a name="set-currency"></a>
 ## Set Currency
 
 By default the currency used is `USD`. If you wish to change it, you may call `setCurrency` method to set a different currency before calling any respective API methods:
@@ -126,124 +197,50 @@ $provider->setCurrency('EUR')->setExpressCheckout($data);
 ```
 
 
-<a name="usage-paypal-params"></a>
-## Additional PayPal API Parameters
-
-By default only a specific set of parameters are used for PayPal API calls. However, if you wish specify any other additional parameters you may call the `addOptions` method before calling any respective API methods:
+<a name="refund-transaction"></a>
+## Refund Transaction
 
 ```php
-$options = [
-    'BRANDNAME' => 'MyBrand',
-    'LOGOIMG' => 'https://example.com/mylogo.png',
-    'CHANNELTYPE' => 'Merchant'
-];
-
-$provider->addOptions($options)->setExpressCheckout($data);
+$response = $provider->refundTransaction($transactionid);
 ```
-
-<a name="usage-express-checkout"></a>
-#### Express Checkout
-
-```php
-$data = [];
-$data['items'] = [
-    [
-        'name' => 'Product 1',
-        'price' => 9.99,
-        'qty' => 1
-    ],
-    [
-        'name' => 'Product 2',
-        'price' => 4.99,
-        'qty' => 2
-    ]
-];
-
-$data['invoice_id'] = 1;
-$data['invoice_description'] = "Order #{$data[invoice_id]} Invoice";
-$data['return_url'] = url('/payment/success');
-$data['cancel_url'] = url('/cart');
-
-$total = 0;
-foreach($data['items'] as $item) {
-    $total += $item['price']*$item['qty'];
-}
-
-$data['total'] = $total;
-```
-
-<a name="usage-ec-setexpresscheckout"></a>
-* **SetExpressCheckout**
-
-    ```php
-    $response = $provider->setExpressCheckout($data);
-    
-    // Use the following line when creating recurring payment profiles (subscriptions)
-    $response = $provider->setExpressCheckout($data, true);
-    
-     // This will redirect user to PayPal
-    return redirect($response['paypal_link']);
-    ```
-
-<a name="usage-ec-getexpresscheckoutdetails"></a>
-* **GetExpressCheckoutDetails**
-
-    ```php
-    $response = $provider->getExpressCheckoutDetails($token);
-    ```
-    
-<a name="usage-ec-doexpresscheckoutpayment"></a>
-* **DoExpressCheckoutPayment** 
-
-    ```php
-    // Note that 'token', 'PayerID' are values returned by PayPal when it redirects to success page after successful verification of user's PayPal info.
-    $response = $provider->doExpressCheckoutPayment($data, $token, $PayerID);
-    ```
-
-<a name="usage-ec-refundtransaction"></a>
-* **RefundTransaction**
-
-    ```php
-    $response = $provider->refundTransaction($transactionid);
-    ```
 
 To issue partial refund, you must provide the amount as well for refund:
 
-    ```php
-    $amount = 10;
-    $response = $provider->refundTransaction($transactionid, $amount);
-    ```
-
+```php
+$amount = 10;
+$response = $provider->refundTransaction($transactionid, $amount);
+```
 <a name="usage-ec-createbillingagreement"></a>    
-* **CreateBillingAgreement**
+**Create Billing Agreement**
 
-    ```php
-    // The $token is the value returned from SetExpressCheckout API call
-    $response = $provider->createBillingAgreement($token);
-    ```    
+```php
+// The $token is the value returned from SetExpressCheckout API call
+$response = $provider->createBillingAgreement($token);
+```    
 
-<a name="usage-ec-createrecurringprofile"></a>
-* **CreateRecurringPaymentsProfile**
+<a name="recurring-payment"></a>
+## Recurring Payment
 
-    ```php
-    // The $token is the value returned from SetExpressCheckout API call
-    $startdate = Carbon::now()->toAtomString();
-    $profile_desc = !empty($data['subscription_desc']) ?
-                $data['subscription_desc'] : $data['invoice_description'];
-    $data = [
-        'PROFILESTARTDATE' => $startdate,
-        'DESC' => $profile_desc,
-        'BILLINGPERIOD' => 'Month', // Can be 'Day', 'Week', 'SemiMonth', 'Month', 'Year'
-        'BILLINGFREQUENCY' => 1, // 
-        'AMT' => 10, // Billing amount for each billing cycle
-        'CURRENCYCODE' => 'USD', // Currency code 
-        'TRIALBILLINGPERIOD' => 'Day',  // (Optional) Can be 'Day', 'Week', 'SemiMonth', 'Month', 'Year'
-        'TRIALBILLINGFREQUENCY' => 10, // (Optional) set 12 for monthly, 52 for yearly 
-        'TRIALTOTALBILLINGCYCLES' => 1, // (Optional) Change it accordingly
-        'TRIALAMT' => 0, // (Optional) Change it accordingly
-    ];
-    $response = $provider->createRecurringPaymentsProfile($data, $token);
-    ```    
+* **Creating Profile**
+  ```php
+  // The $token is the value returned from SetExpressCheckout API call
+  $startdate = Carbon::now()->toAtomString();
+  $profile_desc = !empty($data['subscription_desc']) ?
+  $data['subscription_desc'] : $data['invoice_description'];
+  $data = [
+  'PROFILESTARTDATE' => $startdate,
+  'DESC' => $profile_desc,
+  'BILLINGPERIOD' => 'Month', // Can be 'Day', 'Week', 'SemiMonth', 'Month', 'Year'
+  'BILLINGFREQUENCY' => 1, // 
+  'AMT' => 10, // Billing amount for each billing cycle
+  'CURRENCYCODE' => 'USD', // Currency code 
+  'TRIALBILLINGPERIOD' => 'Day',  // (Optional) Can be 'Day', 'Week', 'SemiMonth', 'Month', 'Year'
+  'TRIALBILLINGFREQUENCY' => 10, // (Optional) set 12 for monthly, 52 for yearly 
+  'TRIALTOTALBILLINGCYCLES' => 1, // (Optional) Change it accordingly
+  'TRIALAMT' => 0, // (Optional) Change it accordingly
+  ];
+  $response = $provider->createRecurringPaymentsProfile($data, $token);
+  ```    
 
 <a name="usage-ec-getrecurringprofiledetails"></a>
 * **GetRecurringPaymentsProfileDetails**
@@ -273,8 +270,8 @@ To issue partial refund, you must provide the amount as well for refund:
     $response = $provider->reactivateRecurringPaymentsProfile($profileid);    
     ```    
 
-<a name="usage-adaptive-payments"></a>
-#### Adaptive Payments
+<a name="adaptive-payments"></a>
+## Adaptive Payments
 
 To use adaptive payments, you must set the provider to use Adaptive Payments:
 
@@ -285,41 +282,41 @@ PayPal::setProvider('adaptive_payments');
 <a name="usage-adaptive-pay"></a>
 * **Pay**
 
-```php
+  ```php
 
-// Change the values accordingly for your application
-$data = [
-    'receivers'  => [
-        [
-            'email' => 'johndoe@example.com',
-            'amount' => 10,
-            'primary' => true,
-        ],
-        [
-            'email' => 'janedoe@example.com',
-            'amount' => 5,
-            'primary' => false
-        ]
-    ],
-    'payer' => 'EACHRECEIVER', // (Optional) Describes who pays PayPal fees. Allowed values are: 'SENDER', 'PRIMARYRECEIVER', 'EACHRECEIVER' (Default), 'SECONDARYONLY'
-    'return_url' => url('payment/success'), 
-    'cancel_url' => url('payment/cancel'),
-];
+  // Change the values accordingly for your application
+  $data = [
+      'receivers'  => [
+          [
+              'email' => 'johndoe@example.com',
+              'amount' => 10,
+              'primary' => true,
+          ],
+          [
+              'email' => 'janedoe@example.com',
+              'amount' => 5,
+              'primary' => false
+          ]
+      ],
+      'payer' => 'EACHRECEIVER', // (Optional) Describes who pays PayPal fees. Allowed values are: 'SENDER', 'PRIMARYRECEIVER', 'EACHRECEIVER' (Default), 'SECONDARYONLY'
+      'return_url' => url('payment/success'), 
+      'cancel_url' => url('payment/cancel'),
+  ];
 
-$response = $provider->createPayRequest($data);
+  $response = $provider->createPayRequest($data);
 
-// The above API call will return the following values if successful:
-// 'responseEnvelope.ack', 'payKey', 'paymentExecStatus'
+  // The above API call will return the following values if successful:
+  // 'responseEnvelope.ack', 'payKey', 'paymentExecStatus'
 
-```
+  ```
 
 Next, you need to redirect the user to PayPal to authorize the payment
 
-```php
-$redirect_url = $provider->getRedirectUrl('approved', $response['payKey']);
+  ```php
+  $redirect_url = $provider->getRedirectUrl('approved', $response['payKey']);
 
-return redirect($redirect_url);
-```
+  return redirect($redirect_url);
+  ```
 
 <a name="paypalipn"></a>
 ## Handling PayPal IPN
@@ -363,42 +360,42 @@ Suppose you have set IPN URL to **http://example.com/ipn/notify/** in PayPal. To
 
 * For example, you want to create a recurring subscriptions on paypal, first pass data to `SetExpressCheckout` API call in following format:
 
-```php
-// Always update the code below accordingly to your own requirements.
-$data = [];
+  ```php
+  // Always update the code below accordingly to your own requirements.
+  $data = [];
 
-$data['items'] = [
-    [
-        'name'  => "Monthly Subscription",
-        'price' => 0,
-        'qty'   => 1,
-    ],
-];
+  $data['items'] = [
+      [
+          'name'  => "Monthly Subscription",
+          'price' => 0,
+          'qty'   => 1,
+      ],
+  ];
 
-$data['subscription_desc'] = "Monthly Subscription #1";
-$data['invoice_id'] = 1;
-$data['invoice_description'] = "Monthly Subscription #1";
-$data['return_url'] = url('/paypal/ec-checkout-success?mode=recurring');
-$data['cancel_url'] = url('/');
+  $data['subscription_desc'] = "Monthly Subscription #1";
+  $data['invoice_id'] = 1;
+  $data['invoice_description'] = "Monthly Subscription #1";
+  $data['return_url'] = url('/paypal/ec-checkout-success?mode=recurring');
+  $data['cancel_url'] = url('/');
 
-$total = 0;
-foreach ($data['items'] as $item) {
-    $total += $item['price'] * $item['qty'];
-}
+  $total = 0;
+  foreach ($data['items'] as $item) {
+      $total += $item['price'] * $item['qty'];
+  }
 
-$data['total'] = $total;
-```            
+  $data['total'] = $total;
+  ```            
 
 * Next perform the remaining steps listed in [`SetExpressCheckout`](#usage-ec-setexpresscheckout).
 * Next perform the exact steps listed in [`GetExpressCheckoutDetails`](#usage-ec-getexpresscheckoutdetails).
 * Finally do the following for [`CreateRecurringPaymentsProfile`](#usage-ec-createrecurringprofile)
 
-```php
-$amount = 9.99;
-$description = "Monthly Subscription #1";
-$response = $provider->createMonthlySubscription($token, $amount, $description);
+  ```php
+  $amount = 9.99;
+  $description = "Monthly Subscription #1";
+  $response = $provider->createMonthlySubscription($token, $amount, $description);
 
-// To create recurring yearly subscription on PayPal
-$response = $provider->createYearlySubscription($token, $amount, $description);
-```
+  // To create recurring yearly subscription on PayPal
+  $response = $provider->createYearlySubscription($token, $amount, $description);
+  ```
             

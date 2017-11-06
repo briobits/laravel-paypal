@@ -124,6 +124,10 @@ class ExpressCheckout
 
         $response = $this->doPayPalRequest('SetExpressCheckout');
 
+        if (!isset($response['TOKEN'])) {
+            throw new \Exception("Set Express Checkout Failed: TOKEN Not Found", 1);
+        }
+
         $response['paypal_link'] = $this->config['gateway_url'].'/webscr?cmd=_express-checkout&token='.$response['TOKEN'];
 
         return $response;
