@@ -31,7 +31,7 @@ By using this plugin you can process or refund payments and handle IPN (Instant 
 <a name="setup"></a>
 ## Setup
 
-**Note: Required only for Laravel 5.4 and below. Laravel 5.5 and above uses Auto Package Discovery, so no need to add service provider**
+> If you are using Laravel 5.5+, you do not need to register the service provider or the alias for the facade. Laravel's [Package Discovery](https://laravel.com/docs/5.5/packages#package-discovery) will handle this for you.
 
 * Add the service provider to your `$providers` array in `config/app.php` file like: 
 
