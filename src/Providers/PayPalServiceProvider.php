@@ -1,15 +1,15 @@
 <?php
 
-namespace Proxylyx\PayPal\Providers;
+namespace ShankargDev\PayPal\Providers;
 
 /*
  * Class PayPalServiceProvider
- * @package Proxylyx\PayPal
+ * @package ShankargDev\PayPal
  */
 
 use Illuminate\Support\ServiceProvider;
-use Proxylyx\PayPal\Services\AdaptivePayments;
-use Proxylyx\PayPal\Services\ExpressCheckout;
+use ShankargDev\PayPal\Services\AdaptivePayments;
+use ShankargDev\PayPal\Services\ExpressCheckout;
 
 class PayPalServiceProvider extends ServiceProvider
 {

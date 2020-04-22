@@ -1,8 +1,8 @@
 <?php
 
-namespace Proxylyx\PayPal\Services;
+namespace ShankargDev\PayPal\Services;
 
-use Proxylyx\PayPal\Traits\PayPalRequest as PayPalAPIRequest;
+use ShankargDev\PayPal\Traits\PayPalRequest as PayPalAPIRequest;
 
 class AdaptivePayments
 {

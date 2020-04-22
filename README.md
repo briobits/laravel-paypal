@@ -26,7 +26,7 @@ By using this plugin you can process or refund payments and handle IPN (Instant 
 * Use following command to install:
 
   ```bash
-  composer require proxylyx/paypal
+  composer require shankargdev/paypal
   ```
 <a name="setup"></a>
 ## Setup
@@ -37,23 +37,23 @@ By using this plugin you can process or refund payments and handle IPN (Instant 
 
   ```php
   // Laravel 5.1 or up
-  Proxylyx\PayPal\Providers\PayPalServiceProvider::class 
+  ShankargDev\PayPal\Providers\PayPalServiceProvider::class 
   ```
   ```php
   // Laravel 5 or below
-  'Proxylyx\PayPal\Providers\PayPalServiceProvider'
+  'ShankargDev\PayPal\Providers\PayPalServiceProvider'
   ```
 
 * Add the alias to your `$aliases` array in `config/app.php` file like: 
 
   ```php
   // Laravel 5.1 or up
-  'PayPal' => Proxylyx\PayPal\Facades\PayPal::class
+  'PayPal' => ShankargDev\PayPal\Facades\PayPal::class
   ```
   
   ```php
   // Laravel 5 or below
-  'PayPal' => 'Proxylyx\PayPal\Facades\PayPal'
+  'PayPal' => 'ShankargDev\PayPal\Facades\PayPal'
   ```
 
 
@@ -63,7 +63,7 @@ By using this plugin you can process or refund payments and handle IPN (Instant 
 * Run the following command to publish configuration:
 
   ```bash
-  php artisan vendor:publish --provider "Proxylyx\PayPal\Providers\PayPalServiceProvider"
+  php artisan vendor:publish --provider "ShankargDev\PayPal\Providers\PayPalServiceProvider"
   ```
 
 * Set you PayPal credentials and environment in **.env** with following variables. For additional configuration you can have a look at **config/paypal.php**, which you should update accordingly.
@@ -345,7 +345,7 @@ Suppose you have set IPN URL to **http://example.com/ipn/notify/** in PayPal. To
      */
     public function postNotify(Request $request)
     {
-        // Import the namespace Proxylyx\PayPal\Services\ExpressCheckout first in your controller.
+        // Import the namespace ShankargDev\PayPal\Services\ExpressCheckout first in your controller.
         $provider = new ExpressCheckout;
         $response = (string) $provider->parsePayPalIPN($request);
         

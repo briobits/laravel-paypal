@@ -1,10 +1,10 @@
 <?php
 
-namespace Proxylyx\PayPal\Services;
+namespace ShankargDev\PayPal\Services;
 
 use Illuminate\Support\Collection;
-use Proxylyx\PayPal\Traits\PayPalRequest as PayPalAPIRequest;
-use Proxylyx\PayPal\Traits\RecurringProfiles;
+use ShankargDev\PayPal\Traits\PayPalRequest as PayPalAPIRequest;
+use ShankargDev\PayPal\Traits\RecurringProfiles;
 
 class ExpressCheckout
 {

@@ -1,11 +1,11 @@
 <?php
 
-namespace Proxylyx\PayPal\Facades;
+namespace ShankargDev\PayPal\Facades;
 
 /*
  * Class Facade
- * @package Proxylyx\PayPal\Facades
- * @see Proxylyx\PayPal\ExpressCheckout
+ * @package ShankargDev\PayPal\Facades
+ * @see ShankargDev\PayPal\ExpressCheckout
  */
 
 use Illuminate\Support\Facades\Facade;
@@ -19,6 +19,6 @@ class PayPal extends Facade
      */
     protected static function getFacadeAccessor()
     {
-        return 'Proxylyx\PayPal\PayPalFacadeAccessor';
+        return 'ShankargDev\PayPal\PayPalFacadeAccessor';
     }
 }

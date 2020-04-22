@@ -1,9 +1,9 @@
 <?php
 
-namespace Proxylyx\PayPal;
+namespace ShankargDev\PayPal;
 
-use Proxylyx\PayPal\Services\AdaptivePayments;
-use Proxylyx\PayPal\Services\ExpressCheckout;
+use ShankargDev\PayPal\Services\AdaptivePayments;
+use ShankargDev\PayPal\Services\ExpressCheckout;
 
 class PayPalFacadeAccessor
 {

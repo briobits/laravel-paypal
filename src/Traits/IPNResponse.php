@@ -1,6 +1,6 @@
 <?php
 
-namespace Proxylyx\PayPal\Traits;
+namespace ShankargDev\PayPal\Traits;
 
 use Illuminate\Http\Request;
 

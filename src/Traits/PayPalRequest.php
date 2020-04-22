@@ -1,6 +1,6 @@
 <?php
 
-namespace Proxylyx\PayPal\Traits;
+namespace ShankargDev\PayPal\Traits;
 
 use GuzzleHttp\Client as HttpClient;
 use GuzzleHttp\Exception\BadResponseException as HttpBadResponseException;
@@ -194,9 +194,9 @@ trait PayPalRequest
         $this->config['signature'] = empty($this->config['certificate']) ?
             $this->config['secret'] : file_get_contents($this->config['certificate']);
 
-        if ($this instanceof \Proxylyx\PayPal\Services\AdaptivePayments) {
+        if ($this instanceof \ShankargDev\PayPal\Services\AdaptivePayments) {
             $this->setAdaptivePaymentsOptions();
-        } elseif ($this instanceof \Proxylyx\PayPal\Services\ExpressCheckout) {
+        } elseif ($this instanceof \ShankargDev\PayPal\Services\ExpressCheckout) {
             $this->setExpressCheckoutOptions($credentials);
         } else {
             throw new \Exception('Invalid api credentials provided for PayPal!. Please provide the right api credentials.');
